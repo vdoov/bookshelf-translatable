@@ -1,0 +1,23 @@
+{
+  "name": "bookshelf-translatable",
+  "version": "1.0.0",
+  "description": "Adds translatable attributes to bookshelf model",
+  "main": "index.js",
+  "scripts": {
+    "test": "node_modules/mocha/bin/mocha tests/translatable.js"
+  },
+  "author": "Alex Vdovin",
+  "license": "MIT License",
+  "dependencies": {
+    "joi": "^13.0.2",
+    "lodash": "^4.17.4",
+    "lodash.difference": "^4.5.0"
+  },
+  "devDependencies": {
+    "bookshelf": "^0.12.0",
+    "chai": "^4.1.2",
+    "knex": "^0.14.2",
+    "mocha": "^4.0.1",
+    "pg": "^7.4.0"
+  }
+}
