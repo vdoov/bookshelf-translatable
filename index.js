@@ -56,6 +56,7 @@ module.exports = function (Bookshelf) {
         //Only initialize another knex instance for translattion table if needed
         this._knex_locale = this._builder(this.translationTableName);
         this.on("fetched", this.fetchTranslatable);
+        this.on("fetched:collection", this.fetchCollection)
       }
 
       proto.constructor.apply(this, arguments);
@@ -163,11 +164,9 @@ module.exports = function (Bookshelf) {
     */
     serialize: function (options) {
       let serialized = proto.serialize.call(this, options);
-
       for (let field in this.translatable) {
         serialized[field] = this.getTranslation(field);
       }
-
       return serialized;
     },
 
@@ -301,6 +300,39 @@ module.exports = function (Bookshelf) {
             model._translationVariations[locale] = data;
           }
           return model;
+        });
+    },
+
+    fetchCollection: function (collection) {
+
+      if (collection.length === 0) {
+        return collection;
+      }
+
+      const ids = collection.pluck('id');
+      return this._knex_locale
+        .where('for_id', 'in', ids)
+        .select()
+        .then(function (rows) {
+          let perId = {};
+          for (let i = 0; i < rows.length; i += 1) {
+            const {for_id, locale} = rows[i];
+            if (! perId[for_id]) {
+              perId[for_id] = {};
+            }
+
+            perId[for_id][locale] = rows[i];
+          }
+
+          return collection.map((item) => {
+            let translations = {};
+            for (let locale in perId[item.id]) {
+              const data = _.omit(perId[item.id][locale], ['for_id', 'locale']);
+              item._translationVariations[locale] = data;
+              return item;
+            }
+          });
+
         });
     },
 
