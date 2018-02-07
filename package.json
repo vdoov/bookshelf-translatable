@@ -1,6 +1,6 @@
 {
   "name": "bookshelf-translatable",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Adds translatable attributes to bookshelf model",
   "main": "index.js",
   "scripts": {
