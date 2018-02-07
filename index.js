@@ -265,28 +265,64 @@ module.exports = function (Bookshelf) {
     saveTranslations: function (options) {
       let promises = [];
 
-      for (let locale in this._translationVariations) {
-        promises.push(this.getSaveLocalePromise_(locale, this._translationVariations[locale], options));
-      }
+      return Bookshelf.knex.transaction((trx) => {
+        for (let locale in this._translationVariations) {
+          promises.push(this.getSaveLocalePromise_(locale, this._translationVariations[locale], options));
+        }
 
-      return Promise.all(promises);
+        return Promise.all(promises)
+        .then((res) => {
+          return res;
+        })
+        .catch((e) => {
+          console.log(e);
+          try {
+            trx.rollback();
+          } catch (err) {
+            console.log('Unable to rollback transaction:');
+            console.error(err);
+          } finally {
+            throw e;
+          }
+        })
+      });
     },
 
-    getSaveLocalePromise_: function (locale, data, options) {
+    getSaveLocalePromise_: function (locale, data, options, trx) {
       let attrs = _.extend({}, data, {'for_id': this.get(this.idAttribute), 'locale': locale});
-      let self = this;
-      return this._knex_locale.insert(attrs)
-      .then(function () {
+
+      return this._knex_locale.transacting(trx).insert(attrs)
+      .then(() => {
         return locale;
       })
-      .catch( function (err) {
-        return self._knex_locale
-          .where({'locale': locale, 'for_id': self.get(self.idAttribute)})
+      .catch(() => {
+        return this._knex_locale.transacting(trx)
+          .where({'locale': locale, 'for_id': this.get(this.idAttribute)})
           .update(data)
-          .then(function () {
+          .then(() => {
             return locale;
+          })
+          .catch((e) => {
+            throw e;
           });
       });
+
+      /*
+      return this._knex_locale.transacting(trx).where({
+          'locale': locale,
+          'for_id': this.get(this.idAttribute)
+      })
+      .then( (rows) => {
+        if (rows.length > 0) {
+
+        } else {
+
+        }
+      })
+      .then(() => {
+          return locale;
+      });
+      */
     },
 
     fetchTranslatable: function (model) {
