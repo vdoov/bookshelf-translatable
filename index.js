@@ -291,38 +291,27 @@ module.exports = function (Bookshelf) {
     getSaveLocalePromise_: function (locale, data, options, trx) {
       let attrs = _.extend({}, data, {'for_id': this.get(this.idAttribute), 'locale': locale});
 
-      return this._knex_locale.transacting(trx).insert(attrs)
-      .then(() => {
-        return locale;
-      })
-      .catch(() => {
-        return this._knex_locale.transacting(trx)
-          .where({'locale': locale, 'for_id': this.get(this.idAttribute)})
-          .update(data)
-          .then(() => {
-            return locale;
-          })
-          .catch((e) => {
-            throw e;
-          });
-      });
-
-      /*
       return this._knex_locale.transacting(trx).where({
-          'locale': locale,
-          'for_id': this.get(this.idAttribute)
-      })
-      .then( (rows) => {
+        'for_id': this.get(this.idAttribute),
+        'locale': locale
+      }).select()
+      .then(rows => {
         if (rows.length > 0) {
-
+          //Already have entry for locale: update
+          return this._knex_locale.transacting(trx)
+            .where({'locale': locale, 'for_id': this.get(this.idAttribute)})
+            .update(data);
         } else {
-
+          //Insert new entry for locale
+          return this._knex_locale.transacting(trx).insert(attrs);
         }
       })
-      .then(() => {
-          return locale;
-      });
-      */
+      .then( () => {
+        return locale;
+      })
+      .catch( e => {
+        return locale;
+      })
     },
 
     fetchTranslatable: function (model) {
